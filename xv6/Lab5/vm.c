@@ -6,7 +6,6 @@
 #include "mmu.h"
 #include "proc.h"
 #include "elf.h"
-
 extern char data[];  // defined by kernel.ld
 pde_t *kpgdir;  // for use in scheduler()
 
@@ -57,7 +56,7 @@ walkpgdir(pde_t *pgdir, const void *va, int alloc)
 // Create PTEs for virtual addresses starting at va that refer to
 // physical addresses starting at pa. va and size might not
 // be page-aligned.
-static int
+int
 mappages(pde_t *pgdir, void *va, uint size, uint pa, int perm)
 {
   char *a, *last;
@@ -317,7 +316,7 @@ copyuvm(pde_t *pgdir, uint sz)
 {
   pde_t *d;
   pte_t *pte;
-  uint pa, i, flags;
+  uint pa, i, j, flags;
   char *mem;
 
   if((d = setupkvm()) == 0)
@@ -332,11 +331,24 @@ copyuvm(pde_t *pgdir, uint sz)
     if((mem = kalloc()) == 0)
       goto bad;
     memmove(mem, (char*)P2V(pa), PGSIZE);
-    if(mappages(d, (void*)i, PGSIZE, V2P(mem), flags) < 0) {
-      kfree(mem);
+    if(mappages(d, (void*)i, PGSIZE, V2P(mem), flags) < 0)
       goto bad;
-    }
   }
+// Lab3: create a second loop to iterate new position of task. 
+  for(j = PGROUNDUP(USERTOP - (myproc()->numPages-1) * PGSIZE); j < USERTOP; j+= PGSIZE){
+    cprintf("copyvum pos: %d \n", j);
+    if((pte = walkpgdir(pgdir, (void *) j, 0)) == 0)
+      panic("copyuvm: pte should exist");
+    if(!(*pte & PTE_P))
+      panic("copyuvm: page not present");
+    pa = PTE_ADDR(*pte);
+    flags = PTE_FLAGS(*pte);
+    if((mem = kalloc()) == 0)
+      goto bad;
+    memmove(mem, (char*)P2V(pa), PGSIZE);
+    if(mappages(d, (void*)j, PGSIZE, V2P(mem), flags) < 0)
+      goto bad;
+ }
   return d;
 
 bad:
