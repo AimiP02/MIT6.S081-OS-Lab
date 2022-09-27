@@ -177,7 +177,7 @@ growproc(int n)
 // Create a new process copying p as the parent.
 // Sets up stack to return as if from system call.
 // Caller must set state of returned proc to RUNNABLE.
-int 
+int
 fork(void)
 {
   int i, pid;
@@ -199,6 +199,7 @@ fork(void)
   np->sz = curproc->sz;
   np->parent = curproc;
   *np->tf = *curproc->tf;
+  np->numPage = curproc->numPage;
 
   // Clear %eax so that fork returns 0 in the child.
   np->tf->eax = 0;

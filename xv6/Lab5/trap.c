@@ -78,22 +78,22 @@ trap(struct trapframe *tf)
     lapiceoi();
     break;
   case T_PGFLT:
-    cprintf("Page fault\n");
-    // check to see if fault address is from right under current bottom of stack
+    // check to see if fault address is from right under current top of stack
     // if yes, grow stack
     // - allocvum with correct parameters to allocate one page at the right place
     // - increment stack size counter 
-    if ((rcr2() >= (USERTOP - (myproc()->numPages * PGSIZE)))) {
-      cprintf("New page allocation start\n");
-      // first addr slot under kernbase
-      // last addr page of what we are mapping
-      if (allocuvm(myproc()->pgdir, USERTOP - ((myproc()->numPages) * PGSIZE), USERTOP - ((myproc()->numPages + 1) * PGSIZE)) == 0) {
-        cprintf("Failed to allocate page\n");
-        break;
-      }
-      myproc()->numPages++;
-      cprintf("Page allocation complete\n");
+    ;
+    uint false_address = rcr2();
+    if(false_address > STACKBASE)
+      exit();
+    false_address = PGROUNDDOWN(false_address);
+
+    if(allocuvm(myproc()->pgdir, false_address, false_address + PGSIZE) == 0) {
+      cprintf("Alloc new page error!\n");
+      exit();
     }
+    myproc()->numPage++;
+    cprintf("Alloc new page, %d current page: %d\n", myproc()->pid, myproc()->numPage);
     break;
 
   //PAGEBREAK: 13

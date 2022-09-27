@@ -13,16 +13,13 @@
 // library system call function. The saved user %esp points
 // to a saved program counter, and then the first argument.
 
-// Lab 3: Several of these functions use sz to call the top of the stack.
-// Since that's no longer the case, the USERTOP takes it place.
-
 // Fetch the int at addr from the current process.
 int
 fetchint(uint addr, int *ip)
 {
-// struct proc *curproc = myproc();
+  // struct proc *curproc = myproc();
 
-  if(addr >= USERTOP || addr+4 > USERTOP)
+  if(addr >= STACKBASE || addr+4 > STACKBASE)
     return -1;
   *ip = *(int*)(addr);
   return 0;
@@ -35,12 +32,12 @@ int
 fetchstr(uint addr, char **pp)
 {
   char *s, *ep;
-  //struct proc *curproc = myproc();
+  // struct proc *curproc = myproc();
 
-  if(addr >= USERTOP || addr + 4 >= USERTOP)
-   return -1;
+  if(addr >= STACKBASE)
+    return -1;
   *pp = (char*)addr;
-  ep = (char*)USERTOP;
+  ep = (char*)STACKBASE;
   for(s = *pp; s < ep; s++){
     if(*s == 0)
       return s - *pp;
@@ -62,11 +59,11 @@ int
 argptr(int n, char **pp, int size)
 {
   int i;
- // struct proc *curproc = myproc();
+  // struct proc *curproc = myproc();
  
   if(argint(n, &i) < 0)
     return -1;
-  if(size < 0 || (uint)i >= USERTOP || (uint)i+size > USERTOP)
+  if(size < 0 || (uint)i >= STACKBASE || (uint)i+size > STACKBASE)
     return -1;
   *pp = (char*)i;
   return 0;
@@ -106,9 +103,7 @@ extern int sys_unlink(void);
 extern int sys_wait(void);
 extern int sys_write(void);
 extern int sys_uptime(void);
-
-extern int sys_shm_open(void);
-extern int sys_shm_close(void);
+extern int sys_wolfie(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -132,8 +127,7 @@ static int (*syscalls[])(void) = {
 [SYS_link]    sys_link,
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
-[SYS_shm_open] sys_shm_open,
-[SYS_shm_close] sys_shm_close
+[SYS_wolfie]  sys_wolfie,
 };
 
 void
